@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YtSave - YouTube Downloader</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%231a1a1a'/><path d='M35 40l20 10-20 10V40z' fill='%23fff'/></svg>">
+  <style>
+    :root { --bg: #0f172a; --card: #1e293b; --primary: #3b82f6; --text: #f1f5f9; --muted: #94a3b8; --border: #334155; --error: #ef4444; --success: #22c55e; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', system-ui, sans-serif; }
+    body { background: var(--bg); color: var(--text); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1rem; }
+    .container { background: var(--card); padding: 2rem; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); width: 100%; max-width: 500px; text-align: center; border: 1px solid var(--border); }
+    h1 { font-size: 1.8rem; margin-bottom: 0.5rem; }
+    .subtitle { color: var(--muted); margin-bottom: 1.5rem; font-size: 0.9rem; }
+    input { width: 100%; padding: 0.8rem 1rem; background: #0b1120; border: 1px solid var(--border); border-radius: 8px; color: white; font-size: 1rem; outline: none; transition: 0.2s; }
+    input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(59,130,246,0.2); }
+    button { width: 100%; padding: 0.8rem; margin-top: 1rem; background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+    button:hover:not(:disabled) { background: #2563eb; transform: translateY(-1px); }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+    .status { margin-top: 1rem; padding: 0.8rem; border-radius: 8px; font-size: 0.9rem; display: none; }
+    .status.loading { background: #1e3a8a; color: #93c5fd; }
+    .status.error { background: #450a0a; color: #fca5a5; }
+    .status.success { background: #052e16; color: #86efac; }
+    .download-link { display: inline-block; margin-top: 0.5rem; padding: 0.6rem 1.2rem; background: var(--success); color: #000; text-decoration: none; border-radius: 6px; font-weight: 500; }
+    .download-link:hover { background: #16a34a; }
+    @media (max-width: 480px) { .container { padding: 1.5rem; } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📥 YtSave</h1>
+    <p class="subtitle">Clean, fast & free YouTube video downloader</p>
+    <form id="form">
+      <input type="url" id="url" placeholder="Paste YouTube URL here..." required>
+      <button type="submit" id="btn">Get Download Link</button>
+    </form>
+    <div id="status" class="status"></div>
+    <div id="result"></div>
+  </div>
+
+  <script>
+    const form = document.getElementById('form');
+    const input = document.getElementById('url');
+    const btn = document.getElementById('btn');
+    const status = document.getElementById('status');
+    const result = document.getElementById('result');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const url = input.value.trim();
+      if (!url) return;
+
+      btn.disabled = true;
+      status.className = 'status loading';
+      status.style.display = 'block';
+      status.textContent = 'Fetching video info...';
+      result.innerHTML = '';
+
+      try {
+        const res = await fetch('/api/download', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to process');
+
+        status.className = 'status success';
+        status.textContent = `Found: ${data.title}`;
+        result.innerHTML = `<a href="${data.downloadUrl}" target="_blank" class="download-link">⬇️ Download Video</a>`;
+      } catch (err) {
+        status.className = 'status error';
+        status.textContent = err.message;
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
